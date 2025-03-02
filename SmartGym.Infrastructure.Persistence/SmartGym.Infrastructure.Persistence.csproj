@@ -16,4 +16,11 @@
     <ProjectReference Include="..\SmartGym.Core.Domain\SmartGym.Core.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="_Data\Configuration\" />
+    <Folder Include="_Data\Interceptors\" />
+    <Folder Include="_Data\Migrations\" />
+    <Folder Include="_Data\Seeds\" />
+  </ItemGroup>
+
 </Project>
