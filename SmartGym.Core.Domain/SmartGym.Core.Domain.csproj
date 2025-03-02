@@ -14,4 +14,9 @@
     <ProjectReference Include="..\SmartGym.Shared\SmartGym.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Contracts\Persestence\DbInitializers\" />
+    <Folder Include="_Identity\" />
+  </ItemGroup>
+
 </Project>
