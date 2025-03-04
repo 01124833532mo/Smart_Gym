@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartGym.Apis.Controller;
 using SmartGym.Apis.MiddleWares;
+using SmartGym.Core.Application;
+using SmartGym.Core.Application.Abstraction;
 using SmartGym.Shared.Errors.Response;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +24,10 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions((option) =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddCoreApplicationAbstractionDependencyInjection(builder.Configuration);
+builder.Services.AddCoreApplicationDependencyInjection();
 
 var app = builder.Build();
 
