@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartGym.Apis.Controller;
+using SmartGym.Apis.Extinsions;
 using SmartGym.Apis.MiddleWares;
 using SmartGym.Core.Application;
 using SmartGym.Core.Application.Abstraction;
+using SmartGym.Infrastructure.Persistence;
+using SmartGym.Shared;
 using SmartGym.Shared.Errors.Response;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,8 +31,13 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddCoreApplicationAbstractionDependencyInjection(builder.Configuration);
 builder.Services.AddCoreApplicationDependencyInjection();
+builder.Services.AddIdentityServices(builder.Configuration);
+builder.Services.AddPersistenceServices(builder.Configuration);
+builder.Services.AddSharedDependency(builder.Configuration);
 
 var app = builder.Build();
+
+await app.InitializerEventManagmentContextAsync();
 
 // Configure the HTTP request pipeline.
 app.UseMiddleware<CustomHandlerMiddleware>();
