@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using SmartGym.Core.Domain._Identity;
 using SmartGym.Infrastructure.Persistence._Data;
+using System.Text;
 
 namespace SmartGym.Apis.Extinsions
 {
@@ -25,7 +28,28 @@ namespace SmartGym.Apis.Extinsions
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 
+            services.AddAuthentication((configurationOptions =>
+            {
+                configurationOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                configurationOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 
+
+            }))
+              .AddJwtBearer(configurations =>
+              {
+                  configurations.TokenValidationParameters = new TokenValidationParameters()
+                  {
+                      ValidateAudience = true,
+                      ValidateIssuer = true,
+                      ValidateIssuerSigningKey = true,
+                      ValidateLifetime = true,
+
+                      ClockSkew = TimeSpan.FromHours(0),
+                      ValidAudience = configuration["JwtSettings:Audience"],
+                      ValidIssuer = configuration["JwtSettings:Issuer"],
+                      IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"]!))
+                  };
+              });
 
 
 

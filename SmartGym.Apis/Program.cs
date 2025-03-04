@@ -5,6 +5,7 @@ using SmartGym.Apis.MiddleWares;
 using SmartGym.Core.Application;
 using SmartGym.Core.Application.Abstraction;
 using SmartGym.Infrastructure.Persistence;
+using SmartGym.Shared;
 using SmartGym.Shared.Errors.Response;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +33,7 @@ builder.Services.AddCoreApplicationAbstractionDependencyInjection(builder.Config
 builder.Services.AddCoreApplicationDependencyInjection();
 builder.Services.AddIdentityServices(builder.Configuration);
 builder.Services.AddPersistenceServices(builder.Configuration);
+builder.Services.AddSharedDependency(builder.Configuration);
 
 var app = builder.Build();
 
