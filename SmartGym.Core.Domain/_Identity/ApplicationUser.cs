@@ -12,6 +12,8 @@ namespace SmartGym.Core.Domain._Identity
         public decimal Weight { get; set; }
         public bool IsDisabled { get; set; }
         public Types Type { get; set; }
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
 
     }
 }

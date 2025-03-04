@@ -6,9 +6,11 @@ using SmartGym.Core.Application.Abstraction.Models.Auth;
 using SmartGym.Core.Application.Abstraction.Services;
 using SmartGym.Core.Domain._Identity;
 using SmartGym.Shared.Errors.Models;
+using SmartGym.Shared.Models.Auth;
 using SmartGym.Shared.Settings;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace SmartGym.Core.Application.Services
@@ -44,7 +46,9 @@ namespace SmartGym.Core.Application.Services
                     Id: user.Id,
                     Email: user.Email,
                     FirstName: user.FirstName,
-                    LastName: user.LastName
+                    LastName: user.LastName,
+                    RefreshTokenExpirationDate: DateTime.Now,  // set on this real refresh token ya ziad 
+                    RefreshToken: ""
             );
             return response;
         }
@@ -93,6 +97,111 @@ namespace SmartGym.Core.Application.Services
 
 
             return new JwtSecurityTokenHandler().WriteToken(tokenObj);
+        }
+        private string? ValidateToken(string token)
+        {
+            var authkey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtsettings.Key));
+
+            var tokenhandler = new JwtSecurityTokenHandler();
+
+            try
+            {
+                tokenhandler.ValidateToken(token, new TokenValidationParameters()
+                {
+                    IssuerSigningKey = authkey,
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = false,
+                    ClockSkew = TimeSpan.Zero,
+                }, out SecurityToken securityToken);
+
+                var securitytokenobj = (JwtSecurityToken)securityToken;
+
+                return securitytokenobj.Claims.First(x => x.Type == ClaimTypes.PrimarySid).Value;
+            }
+            catch (Exception)
+            {
+
+                return null;
+            }
+        }
+        private RefreshToken GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+
+            var genrator = new RNGCryptoServiceProvider();
+
+            genrator.GetBytes(randomNumber);
+
+            return new RefreshToken()
+            {
+                Token = Convert.ToBase64String(randomNumber),
+                CreatedOn = DateTime.UtcNow,
+                ExpireOn = DateTime.UtcNow.AddDays(_jwtsettings.JWTRefreshTokenExpire)
+
+
+            };
+
+
+        }
+
+        public async Task<AuthResponse> GetRefreshToken(RefreshDto refreshDto, CancellationToken cancellationToken = default)
+        {
+            var userId = ValidateToken(refreshDto.Token);
+
+            if (userId is null) throw new NotFoundExeption("User id Not Found", nameof(userId));
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null) throw new NotFoundExeption("User Do Not Exists", nameof(user.Id));
+
+            var UserRefreshToken = user!.RefreshTokens.SingleOrDefault(x => x.Token == refreshDto.RefreshToken && x.IsActice);
+
+            if (UserRefreshToken is null) throw new NotFoundExeption("Invalid Token", nameof(userId));
+
+            UserRefreshToken.RevokedOn = DateTime.UtcNow;
+
+            var newtoken = await GenerateTokenAsync(user);
+
+            var newrefreshtoken = GenerateRefreshToken();
+
+            user.RefreshTokens.Add(new RefreshToken()
+            {
+                Token = newrefreshtoken.Token,
+                ExpireOn = newrefreshtoken.ExpireOn
+            });
+
+            await _userManager.UpdateAsync(user);
+
+            var response = new AuthResponse(
+                              Id: user.Id,
+                              Email: user.Email,
+                              FirstName: user.FirstName,
+                              LastName: user.LastName,
+                              RefreshToken: newrefreshtoken.Token,
+                              RefreshTokenExpirationDate: newrefreshtoken.ExpireOn
+
+                      );
+            return response;
+        }
+
+        public async Task<bool> RevokeRefreshTokenAsync(RefreshDto refreshDto, CancellationToken cancellationToken = default)
+        {
+            var userId = ValidateToken(refreshDto.Token);
+
+            if (userId is null) return false;
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null) return false;
+
+            var UserRefreshToken = user!.RefreshTokens.SingleOrDefault(x => x.Token == refreshDto.RefreshToken && x.IsActice);
+
+            if (UserRefreshToken is null) return false;
+
+            UserRefreshToken.RevokedOn = DateTime.UtcNow;
+
+            await _userManager.UpdateAsync(user);
+            return true;
         }
     }
 }
