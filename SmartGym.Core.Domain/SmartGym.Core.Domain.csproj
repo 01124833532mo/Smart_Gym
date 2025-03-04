@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <Folder Include="Contracts\Persestence\DbInitializers\" />
-    <Folder Include="_Identity\" />
   </ItemGroup>
 
 </Project>
