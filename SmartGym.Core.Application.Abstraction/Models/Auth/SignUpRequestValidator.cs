@@ -35,6 +35,9 @@ namespace SmartGym.Core.Application.Abstraction.Models.Auth
 			RuleFor(x => x.BirthDay)
 				.NotEmpty();
 
+			RuleFor(x => x.Role)
+				.NotEmpty();
+
 			RuleFor(x => x.Height)
 				.GreaterThan(50);
 

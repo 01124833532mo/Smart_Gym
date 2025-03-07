@@ -14,6 +14,7 @@ namespace SmartGym.Core.Application.Abstraction.Models.Auth
 		 string Password,
 		 string Gender,
 		 int Height,
+		 string Role,
 		 decimal Weight,
 		 DateOnly BirthDay
 	);

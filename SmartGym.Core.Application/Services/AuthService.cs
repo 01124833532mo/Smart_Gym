@@ -15,7 +15,7 @@ using System.Text;
 
 namespace SmartGym.Core.Application.Services
 {
-    public class AuthService(IOptions<JwtSettings> jwtsettings, UserManager<ApplicationUser> _userManager) : IAuthService
+    public class AuthService(IOptions<JwtSettings> jwtsettings, UserManager<ApplicationUser> _userManager, RoleManager<ApplicationRole> _roleManager) : IAuthService
     {
         private readonly JwtSettings _jwtsettings = jwtsettings.Value;
 
@@ -26,7 +26,12 @@ namespace SmartGym.Core.Application.Services
             if (emailIsExist)
                 throw new NotFoundExeption("User", request.Email);
 
-            var user = new ApplicationUser
+			var roles = await _roleManager.Roles.ToListAsync();
+
+			if (!roles.Any())
+				throw new NotFoundExeption("Role", request.Role);
+
+			var user = new ApplicationUser
             {
                 UserName = request.Email,
                 Email = request.Email,
@@ -50,7 +55,8 @@ namespace SmartGym.Core.Application.Services
                     RefreshTokenExpirationDate: DateTime.Now,  // set on this real refresh token ya ziad 
                     RefreshToken: ""
             );
-            return response;
+            await _userManager.AddToRoleAsync(user, request.Role);
+			return response;
         }
 
         private async Task<string> GenerateTokenAsync(ApplicationUser user)

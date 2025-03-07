@@ -9,7 +9,7 @@ namespace SmartGym.Apis.Controller.Controllers.Auth
     public class AccountController(IAuthService authService) : BaseApiController
     {
         [HttpPost("Register")]
-        public async Task<ActionResult<AuthResponse>> Register(SignUpRequest request)
+        public async Task<ActionResult<AuthResponse>> Register([FromBody] SignUpRequest request)
         {
             var result = await authService.SignUpAsync(request);
             return Ok(result);
