@@ -11,50 +11,46 @@ namespace SmartGym.Apis.Extinsions
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration configuration)
         {
+			services.AddIdentity<ApplicationUser, ApplicationRole>()
+				.AddRoleManager<RoleManager<ApplicationRole>>()
+				.AddEntityFrameworkStores<ApplicationDbContext>()
+				.AddDefaultTokenProviders();
 
+			services.Configure<IdentityOptions>(identityOptions =>
+			{
+				//identityOptions.SignIn.RequireConfirmedPhoneNumber = true;
+				identityOptions.Password.RequireDigit = true;
+				identityOptions.Password.RequireLowercase = false;
+				identityOptions.Password.RequireNonAlphanumeric = false;
+				identityOptions.Password.RequireUppercase = false;
+				identityOptions.Lockout.AllowedForNewUsers = true;
+				identityOptions.Lockout.MaxFailedAccessAttempts = 5;
+				identityOptions.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromHours(5);
+				identityOptions.User.RequireUniqueEmail = true;
+			});
 
-            services.AddIdentity<ApplicationUser, IdentityRole>((identityOptions) =>
-            {
-                //identityOptions.SignIn.RequireConfirmedPhoneNumber = true;
-                identityOptions.Password.RequireDigit = true;
-                identityOptions.Password.RequireLowercase = false;
-                identityOptions.Password.RequireNonAlphanumeric = false;
-                identityOptions.Password.RequireUppercase = false;
-                identityOptions.Lockout.AllowedForNewUsers = true;
-                identityOptions.Lockout.MaxFailedAccessAttempts = 5;
-                identityOptions.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromHours(5);
-                identityOptions.User.RequireUniqueEmail = true;
-            })
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+			services.AddAuthentication(configurationOptions =>
+			{
+				configurationOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				configurationOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+			})
+			.AddJwtBearer(configurations =>
+			{
+				configurations.TokenValidationParameters = new TokenValidationParameters()
+				{
+					ValidateAudience = true,
+					ValidateIssuer = true,
+					ValidateIssuerSigningKey = true,
+					ValidateLifetime = true,
 
+					ClockSkew = TimeSpan.FromHours(0),
+					ValidAudience = configuration["JwtSettings:Audience"],
+					ValidIssuer = configuration["JwtSettings:Issuer"],
+					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"]!))
+				};
+			});
 
-            services.AddAuthentication((configurationOptions =>
-            {
-                configurationOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                configurationOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-
-
-            }))
-              .AddJwtBearer(configurations =>
-              {
-                  configurations.TokenValidationParameters = new TokenValidationParameters()
-                  {
-                      ValidateAudience = true,
-                      ValidateIssuer = true,
-                      ValidateIssuerSigningKey = true,
-                      ValidateLifetime = true,
-
-                      ClockSkew = TimeSpan.FromHours(0),
-                      ValidAudience = configuration["JwtSettings:Audience"],
-                      ValidIssuer = configuration["JwtSettings:Issuer"],
-                      IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:Key"]!))
-                  };
-              });
-
-
-
-
-            return services;
-        }
+			return services;
+		}
     }
 }
