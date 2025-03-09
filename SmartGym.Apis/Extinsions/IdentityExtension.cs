@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using SmartGym.Core.Domain._Identity;
 using SmartGym.Infrastructure.Persistence._Data;
@@ -13,7 +12,7 @@ namespace SmartGym.Apis.Extinsions
         {
 
 
-            services.AddIdentity<ApplicationUser, IdentityRole>((identityOptions) =>
+            services.AddIdentity<ApplicationUser, ApplicationRole>((identityOptions) =>
             {
                 //identityOptions.SignIn.RequireConfirmedPhoneNumber = true;
                 identityOptions.Password.RequireDigit = true;

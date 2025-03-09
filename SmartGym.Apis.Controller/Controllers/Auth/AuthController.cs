@@ -14,6 +14,13 @@ namespace SmartGym.Apis.Controller.Controllers.Auth
             var result = await authService.SignUpAsync(request);
             return Ok(result);
         }
+
+        [HttpPost("Login")]
+        public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginDto request)
+        {
+            var result = await authService.LoginAsync(request);
+            return Ok(result);
+        }
         [HttpPost("Get-Refresh-Token")]
 
         public async Task<ActionResult<AuthResponse>> RefreshToken([FromBody] RefreshDto model)
