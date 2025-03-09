@@ -10,5 +10,7 @@ namespace SmartGym.Core.Application.Abstraction.Services
 
         Task<bool> RevokeRefreshTokenAsync(RefreshDto refreshDto, CancellationToken cancellationToken = default);
 
+        Task<AuthResponse> LoginAsync(LoginDto loginDto, CancellationToken cancellationToken = default);
+
     }
 }

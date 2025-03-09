@@ -5,6 +5,7 @@
          string? Email,
          string? FirstName,
          string? LastName,
+         string? Token,
          string? RefreshToken,
          DateTime? RefreshTokenExpirationDate
     );

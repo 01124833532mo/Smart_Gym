@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SmartGym.Core.Application.Abstraction.Models.Auth;
@@ -15,7 +16,9 @@ using System.Text;
 
 namespace SmartGym.Core.Application.Services
 {
-    public class AuthService(IOptions<JwtSettings> jwtsettings, UserManager<ApplicationUser> _userManager) : IAuthService
+    public class AuthService(IOptions<JwtSettings> jwtsettings, UserManager<ApplicationUser> _userManager,
+        ILogger<AuthService> logger,
+        SignInManager<ApplicationUser> signInManager) : IAuthService
     {
         private readonly JwtSettings _jwtsettings = jwtsettings.Value;
 
@@ -42,14 +45,97 @@ namespace SmartGym.Core.Application.Services
             if (!result.Succeeded)
                 throw new ValidationExeption() { Errors = result.Errors.Select(p => p.Description) };
 
+            //var roleResult = await _userManager.AddToRoleAsync(user, Types.User.ToString());
+            //if (!roleResult.Succeeded)
+            //    throw new ValidationExeption() { Errors = roleResult.Errors.Select(E => E.Description) };
+
+
+
             var response = new AuthResponse(
                     Id: user.Id,
                     Email: user.Email,
                     FirstName: user.FirstName,
+                    Token: await GenerateTokenAsync(user),
                     LastName: user.LastName,
                     RefreshTokenExpirationDate: DateTime.Now,  // set on this real refresh token ya ziad 
                     RefreshToken: ""
             );
+            return response;
+        }
+
+        public async Task<AuthResponse> LoginAsync(LoginDto loginDto, CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByEmailAsync(loginDto.Email);
+            if (user is null)
+            {
+                logger.LogWarning("Invalid Login Attempt For Email {Email}", loginDto.Email);
+                throw new UnAuthorizedExeption("Invalid Login");
+            }
+
+            var result = await signInManager.CheckPasswordSignInAsync(user, loginDto.Password, lockoutOnFailure: true);
+
+            if (result.IsLockedOut)
+            {
+                logger.LogWarning("Email is Locked Out {Email}", loginDto.Email);
+                throw new UnAuthorizedExeption("Email is Locked Out");
+
+            }
+
+            if (!result.Succeeded)
+            {
+                logger.LogWarning("Invalid Login Attempt For Email {Email}", loginDto.Email);
+                throw new UnAuthorizedExeption("Invalid Login");
+
+            }
+
+            // Initialize the response with default values
+            var response = new AuthResponse(
+                Id: user.Id,
+                Email: user.Email,
+                FirstName: user.FirstName,
+                Token: await GenerateTokenAsync(user),
+                LastName: user.LastName,
+                RefreshToken: null, // Default value
+                RefreshTokenExpirationDate: null // Default value
+            );
+
+            response = await CheckRefreshToken(_userManager, user, response);
+
+            logger.LogInformation("User with Email {Email} logged in", loginDto.Email);
+
+            return response;
+        }
+
+        private async Task<AuthResponse> CheckRefreshToken(UserManager<ApplicationUser> _userManager, ApplicationUser? user, AuthResponse response)
+        {
+            if (user.RefreshTokens.Any(t => t.IsActice))
+            {
+                var activeToken = user.RefreshTokens.FirstOrDefault(x => x.IsActice);
+                response = response with
+                {
+                    RefreshToken = activeToken!.Token,
+                    RefreshTokenExpirationDate = activeToken.ExpireOn
+                };
+            }
+            else
+            {
+                var refreshToken = GenerateRefreshToken();
+                response = response with
+                {
+                    RefreshToken = refreshToken.Token,
+                    RefreshTokenExpirationDate = refreshToken.ExpireOn
+                };
+
+                user.RefreshTokens.Add(new RefreshToken()
+                {
+                    Token = refreshToken.Token,
+                    ExpireOn = refreshToken.ExpireOn,
+
+                });
+
+                await _userManager.UpdateAsync(user);
+            }
+
             return response;
         }
 
@@ -178,6 +264,7 @@ namespace SmartGym.Core.Application.Services
                               Email: user.Email,
                               FirstName: user.FirstName,
                               LastName: user.LastName,
+                              Token: newtoken,
                               RefreshToken: newrefreshtoken.Token,
                               RefreshTokenExpirationDate: newrefreshtoken.ExpireOn
 
@@ -203,5 +290,7 @@ namespace SmartGym.Core.Application.Services
             await _userManager.UpdateAsync(user);
             return true;
         }
+
+
     }
 }
